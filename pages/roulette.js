@@ -41,6 +41,17 @@ const fieldSpan = {
   margin: '1px'
 }
 
+const fieldSpanRed = {
+  border: '1px solid #0d0d0d',
+  boxSizing: 'content-box',
+  lineHeight: '45px',
+  listStyleType: 'none',
+  display: 'block',
+  width: '45px',
+  margin: '1px',
+  background: 'red'
+}
+
 const fieldLabel = {
   cursor: 'pointer',
   textAlign: 'center',
@@ -63,52 +74,51 @@ const emptyMatrix = (m, k) => {
 
 class Roulette extends React.Component {
   constructor(props) {
-    console.log('hi constructor!')
     super(props);
 
-    console.log(this.props)
     this.state = {
       chance: 10,
       title: 'Рандомат: Рулетка',
       description: 'Установи вероятность выйгрыша и выбери ячейки. Играй в хорошо знакомую рулетку, где выигрывает 1 ячейка из 100.',
       url: 'http://176.112.215.37:3000',
-      counter: this.props.counter,
-      hash: this.props.hash,
-      marked: [],
-      matrix: this.props.matrix,
-      result: undefined,
-      winning: undefined
+      counter: this.props.counter || 0,
+      hash: this.props.hash || '',
+      marked: this.props.marked || [],
+      matrix: this.props.matrix || [],
+      result: this.props.result || undefined,
+      winning: this.props.winning || undefined
     }
   }
-  async handleClick(event){
-    const res = await fetch(`http://176.112.215.37:3000/r/check/${this.state.counter}`, {
+  async handleClickInit(event){
+    const res = await fetch(`${this.state.url}/r/new`)
+    const data = await res.json()
+    this.setState({
+      counter: data.counter,
+      hash: data.hash,
+      marked: [],
+      winning: undefined,
+      result: undefined
+    })
+  }
+  async handleClickStart(event){
+    const res = await fetch(`${this.state.url}/r/check/${this.state.counter}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ marked: this.state.marked, hash:  this.state.hash})
+      body: JSON.stringify({ marked: this.state.marked, hash: this.state.hash, counter: this.state.counter})
     })
     const data = await res.json()
-    const {winning, result} = data
     this.setState({
-      winning: winning,
-      result: result
+      winning: data.winning,
+      result: data.result
     })
-    Router.push({
-      pathname: '/roulette-results',
-      // query: query
-    })
-    // console.log(data)
+    if(data.result) {
+      alert('Вы выйграли!')
+    } else {
+      alert('Вы проиграли!')
+    }
   }
-  // componentDidUpdate(prevProps) {
-  //   const { pathname, query } = this.props.router
-  //   console.log('pathname: ', pathname)
-  //   console.log('query: ', query)
-  //   // verify props have changed to avoid an infinite loop
-  //   if (query.id !== prevProps.router.query.id) {
-  //     // fetch data based on the new query
-  //   }
-  // }
   fieldClick(event){
     let fieldNumber = 1 * event.currentTarget.children[0].innerText
     let indexOfItem = this.state.marked.indexOf(fieldNumber)
@@ -126,28 +136,20 @@ class Roulette extends React.Component {
       })
     }
   }
-  static async getInitialProps ({ query }) {
-    console.log('getInitialProps: ', query)
-    const res = await fetch(`http://176.112.215.37:3000/r/new`)
-    const data = await res.json()
+  static async getInitialProps () {
     const matrix = await emptyMatrix([], 1)
-    return ({
-      counter: data.counter,
-      hash: data.hash,
-      matrix: matrix
-    })
+    return ({ matrix: matrix })
   }
   render () {
     return(
       <Layout title={this.state.title} description={this.state.description} url={this.state.url}>
         <div className="hero">
-          <h1 className="title" style={{paddingTop: '80px'}}>Поздравляем Вас!</h1>
-          <h1 className="title">Вы нашли Рулетку.</h1>
+          <h1 className="title" style={{paddingTop: '0px', fontSize: '24px'}}>Рулетка</h1>
           <p className="description">
              Играй в хорошо знакомую рулетку, где выигрывает 1 ячейка из 100.
           </p>
           <div className="row-roulette-params">
-            <div className="roulette-params">
+            <div className="roulette-params" style={{width: '100%', paddingBottom: '24px'}}>
               <h3>Вероятность выйгрыша: {this.state.chance}%</h3>
               <p>Установи вероятность выйгрыша</p>
               <div className="input-range">
@@ -164,19 +166,23 @@ class Roulette extends React.Component {
             </div>
           </div>
           <div className="row-roulette-params">
-            <div className="roulette-params">
+            <div className="roulette-params"  style={{marginRight: '5px', width: '50%'}}>
               <h3>Осталось ячеек: {this.state.chance - this.state.marked.length}</h3>
             </div>
-          </div>
-          <div className="row-roulette-params">
-            <div className="roulette-params">
+            <div className="roulette-params" style={{marginLeft: '5px', width: '50%'}}>
               <h3>Номер рулетки: {this.state.counter}</h3>
             </div>
           </div>
           <div className="row-roulette-params">
-            <div className="roulette-params">
+            <button className="roulette-click" style={{marginRight: '10px',width: '20%'}} type="button" onClick={(e) => {e.preventDefault(); this.handleClickInit(e)}}>
+              Сделать ставку
+            </button>
+            <div className="roulette-params" style={{width: '60%'}}>
               <h3>Хэш рулетки: {this.state.hash}</h3>
             </div>
+            <button className="roulette-click" style={{marginLeft: '10px',width: '20%'}} type="button" onClick={(e) => {e.preventDefault(); this.handleClickStart(e)}}>
+              Начать игру
+            </button>
           </div>
           <div className="row-roulette-params">
             <div id="fields-form" style={fieldForm}>
@@ -185,19 +191,14 @@ class Roulette extends React.Component {
                   {items.map( item => (
                     <div key={`div-field-${item}`} onClick={(e) => {e.preventDefault(); this.fieldClick(e)}} >
                       <label style={fieldLabel}>
-                        <span id={`field-${item}`} className={this.state.marked.indexOf(1 * item) === -1 ? 'unmarked' : 'marked'} style={fieldSpan}>{item}</span>
-                        <input id={`field-${item}`} name={`fields[${item}]`} value={item} style={fieldInput} type="checkbox" />
+                        <span id={`field-${item}`} className={this.state.marked.indexOf(1 * item) === -1 ? 'unmarked' : 'marked'} style={this.state.winning === 1 * item ? fieldSpanRed : fieldSpan}>{item}</span>
+                        <input name={`fields[${item}]`} value={item} style={fieldInput} type="checkbox" />
                       </label>
                     </div>
                   ))}
                 </div>
               ))}
             </div>
-          </div>
-          <div className="row-roulette-params">
-            <button className="roulette-click" type="button" onClick={(e) => {e.preventDefault(); this.handleClick(e)}}>
-              Играть
-            </button>
           </div>
         </div>
       </Layout>

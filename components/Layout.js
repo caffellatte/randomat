@@ -61,7 +61,7 @@ class Layout extends React.Component {
          .card h3 {
            margin: 0;
            color: #067df7;
-           font-size: 18px;
+           font-size: 14px;
          }
          .card p {
            margin: 0;
@@ -70,7 +70,7 @@ class Layout extends React.Component {
            color: #333;
          }
          .roulette-params {
-           padding: 18px 18px 24px;
+           padding: 3px 3px 4px;
            width: 520px;
            text-align: center;
            text-decoration: none;

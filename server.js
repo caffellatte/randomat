@@ -37,7 +37,7 @@ app
         }
         data.checked = true
         data.marked = marked
-        if (data.winning in marked) {
+        if (marked.indexOf(data.winning) > -1) {
           data.result = true
         } else {
           data.result = false
@@ -48,18 +48,7 @@ app
             res.end(JSON.stringify({ error: err }))
             return
           }
-          res.end(JSON.stringify({response: data}))
-          const actualPage = '/roulette-results'
-          const queryParams = {
-            winning: data.winning,
-            result: data.result,
-            checked: data.checked,
-            marked: marked,
-            hash: hash,
-            counter: counter
-          }
-          // console.log(queryParams)
-          return app.render(req, res, actualPage, queryParams)
+          res.end(JSON.stringify(data))
         })
       })
     })
@@ -97,7 +86,6 @@ app
                 res.end(JSON.stringify({ error: err }))
                 return
               }
-              // console.log(data)
               res.end(JSON.stringify({
                 counter: data.counter,
                 hash: data.hash
